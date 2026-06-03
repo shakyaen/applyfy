@@ -386,6 +386,11 @@ function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
 
 function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAddApplication }) {
   const statuses = ['Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'];
+  const [filter, setFilter] = useState('All');
+
+  const filtered = filter === 'All'
+    ? [...applications].sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+    : [...applications].filter(a => a.status === filter).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
   return (
     <div className="screen-card dashboard-card">
@@ -399,15 +404,34 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
         <div><strong>{applications.filter(a => a.status === 'Applied').length}</strong><span>Applied</span></div>
       </div>
 
+      <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0'}}>
+        {['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => (
+          <button
+            key={f}
+            onClick={() => setFilter(f)}
+            style={{
+              padding: '6px 14px',
+              borderRadius: 20,
+              border: 'none',
+              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: 13,
+              background: filter === f ? '#214ecf' : '#eef3ff',
+              color: filter === f ? 'white' : '#214ecf',
+            }}
+          >{f}</button>
+        ))}
+      </div>
+
       {loading ? <Loader /> : (
         <div className="application-list">
-          {applications.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="empty-state">
               <Briefcase size={40} />
-              <p>No applications yet. Add your first one!</p>
+              <p>{filter === 'All' ? 'No applications yet. Add your first one!' : `No ${filter} applications!`}</p>
             </div>
-          ) : applications.map(app => (
-           <article className="application-item" key={app.id}>
+          ) : filtered.map(app => (
+            <article className="application-item" key={app.id}>
               <div>
                 <strong>{app.company}</strong>
                 <span>{app.role} · {app.type}</span>

@@ -373,8 +373,8 @@ function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
         <strong>Next step</strong>
         <span>{latestApp?.reminder || 'Reminder before deadline'}</span>
         {latestApp?.deadline && (
-          <span style={{color: '#214ecf', fontWeight: '700', marginTop: 6}}>
-            📅 {Math.ceil((new Date(latestApp.deadline) - new Date()) / 86400000)} days until deadline!
+         <span style={{color: '#214ecf', fontWeight: '700', marginTop: 6}}>
+            📅 {Math.ceil((new Date(latestApp.deadline) - new Date()) / 86400000) === 1 ? '1 day until deadline!' : `${Math.ceil((new Date(latestApp.deadline) - new Date()) / 86400000)} days until deadline!`}
           </span>
         )}
       </div>
@@ -431,11 +431,11 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
               <p>{filter === 'All' ? 'No applications yet. Add your first one!' : `No ${filter} applications!`}</p>
             </div>
           ) : filtered.map(app => (
-            <article className="application-item" key={app.id}>
+           <article className="application-item" key={app.id}>
               <div>
                 <strong>{app.company}</strong>
                 <span>{app.role} · {app.type}</span>
-                <small>{app.deadline ? `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left` : 'No deadline'} · {app.source || 'Manual entry'}</small>
+                <small>{app.deadline ? (Math.ceil((new Date(app.deadline) - new Date()) / 86400000) === 1 ? '1 day left' : `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left`) : 'No deadline'} · {app.source || 'Manual entry'}</small>
               </div>
               <div className="item-actions">
                 <select

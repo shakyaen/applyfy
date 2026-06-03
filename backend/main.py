@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 SUPABASE_URL = "https://nybowqwgvcuzoezxuewl.supabase.co"
-SUPABASE_KEY = "sb_secret_-vCGqjL1qZmYF6kop53gzA_qm-4tT0K"
+SUPABASE_KEY = "sb_secret_biwmRH6204P7R6teRXdN7g_hFnVOr10"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 

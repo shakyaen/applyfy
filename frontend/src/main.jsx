@@ -275,7 +275,7 @@ function ProfileScreen({ profile, setProfile, error, loading, onBack, onSubmit }
       <label>Year level
         <select value={profile.year} onChange={e => setProfile({ ...profile, year: e.target.value })}>
           <option value="">Select year</option>
-          <option>First year</option><option>Second year</option><option>Third year</option><option>Recent graduate</option>
+          <option>First year</option><option>Second year</option><option>Third year</option><option>Fourth year</option><option>Recent graduate</option>
         </select>
       </label>
       <label>Study area
@@ -399,16 +399,17 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
               <p>No applications yet. Add your first one!</p>
             </div>
           ) : applications.map(app => (
-            <article className="application-item" key={app.id}>
+           <article className="application-item" key={app.id}>
               <div>
                 <strong>{app.company}</strong>
                 <span>{app.role} · {app.type}</span>
-                <small>Deadline: {app.deadline || 'Not set'} · {app.source || 'Manual entry'}</small>
+                <small>{app.deadline ? `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left` : 'No deadline'} · {app.source || 'Manual entry'}</small>
               </div>
               <div className="item-actions">
                 <select
                   value={app.status}
                   onChange={e => onStatusChange(app.id, e.target.value)}
+                  style={{color: app.status === 'Interview' ? '#16a35d' : app.status === 'Offer' ? '#f0a500' : app.status === 'Rejected' ? '#c0392b' : app.status === 'Ghosted' ? '#888888' : '#214ecf', fontWeight: '700'}}
                 >
                   {statuses.map(s => <option key={s}>{s}</option>)}
                 </select>

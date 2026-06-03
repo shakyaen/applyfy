@@ -251,7 +251,7 @@ function LoginScreen({ profile, setProfile, error, loading, onSubmit }) {
           autoComplete="email"
         />
       </label>
-      <label>Password<input type="password" placeholder="Demo — any password works" /></label>
+      <label>Password<input type="password" placeholder="Enter your password" /></label>
       {error && <p className="error-text">{error}</p>}
       {loading ? <Loader /> : (
         <button className="primary-btn" type="submit">
@@ -346,8 +346,11 @@ function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading
       <label>Source
         <input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn / Seek / Company site" />
       </label>
-      <label>Job link
+     <label>Job link
         <input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." />
+      </label>
+      <label>Notes (optional)
+        <input value={jobForm.notes || ''} onChange={e => setJobForm({ ...jobForm, notes: e.target.value })} placeholder="e.g. applied via referral, mentioned team culture" />
       </label>
       {error && <p className="error-text">{error}</p>}
       {loading ? <Loader /> : (
@@ -369,6 +372,11 @@ function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
       <div className="summary-card">
         <strong>Next step</strong>
         <span>{latestApp?.reminder || 'Reminder before deadline'}</span>
+        {latestApp?.deadline && (
+          <span style={{color: '#214ecf', fontWeight: '700', marginTop: 6}}>
+            📅 {Math.ceil((new Date(latestApp.deadline) - new Date()) / 86400000)} days until deadline!
+          </span>
+        )}
       </div>
       <button className="primary-btn full" onClick={onDashboard}>View tracker</button>
       <button className="ghost-btn full" onClick={onAddAnother}>Add another application</button>

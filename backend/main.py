@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY")
+SUPABASE_URL = "https://nybowqwgvcuzoezxuewl.supabase.co"
+SUPABASE_KEY = "sb_secret_-vCGqjL1qZmYF6kop53gzA_qm-4tT0K"
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 

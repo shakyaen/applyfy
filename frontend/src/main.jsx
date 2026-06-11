@@ -127,7 +127,11 @@ function App() {
     if (!jobForm.company || !jobForm.role || !jobForm.deadline) { setError('Company, role, and deadline required'); return; }
     setLoading(true);
     try {
-      const reminder = preferences.reminder === 'Weekly summary' ? 'Weekly review' : 'Before deadline';
+      const reminder = preferences.reminder === 'Weekly summary' 
+        ? 'Weekly review' 
+        : preferences.reminder === 'Follow-up reminders'
+        ? 'Follow-up reminders'
+        : 'Before deadline';
       const { application } = await api.addApplication({ user_email: profile.email, company: jobForm.company, role: jobForm.role, type: jobForm.type || preferences.jobType, deadline: jobForm.deadline, source: jobForm.source, link: jobForm.link, notes: jobForm.notes, status: 'Applied', reminder });
       setLatestApp(application);
       setApplications(prev => [application, ...prev]);
@@ -529,3 +533,4 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
 }
 
 createRoot(document.getElementById('root')).render(<App />);
+

@@ -24,15 +24,20 @@ app.add_middleware(
 )
 
 
-# ------- Pydantic Models -------
+# ------- Pydantic Models (UPDATED) -------
 
 class UserProfile(BaseModel):
     email: str
-    university: str
-    year: str
-    study_area: str
-    job_type: str
-    reminder_pref: str
+    password: Optional[str] = None
+    first_name: Optional[str] = None
+    middle_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone: Optional[str] = None
+    university: Optional[str] = None
+    year: Optional[str] = None
+    study_area: Optional[str] = None
+    job_type: Optional[str] = "Internship"
+    reminder_pref: Optional[str] = "Before deadlines"
 
 
 class Application(BaseModel):
@@ -63,12 +68,21 @@ def upsert_user(profile: UserProfile):
     """Create or update a user profile."""
     data = {
         "email": profile.email,
+        "password": profile.password,
+        "first_name": profile.first_name,
+        "middle_name": profile.middle_name,
+        "last_name": profile.last_name,
+        "phone": profile.phone,
         "university": profile.university,
         "year": profile.year,
         "study_area": profile.study_area,
         "job_type": profile.job_type,
         "reminder_pref": profile.reminder_pref,
+        "updated_at": "now()",
     }
+    # Remove None values so they don't overwrite existing data
+    data = {k: v for k, v in data.items() if v is not None and v != "now()"}
+    
     result = supabase.table("users").upsert(data, on_conflict="email").execute()
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to save user profile")

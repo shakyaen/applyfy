@@ -4,8 +4,7 @@ import {
   Briefcase, CalendarClock, CheckCircle2, ChevronRight,
   GraduationCap, LayoutDashboard, LockKeyhole, ShieldCheck,
   Sparkles, Trash2, UserPlus, Eye, EyeOff, Phone, Mail, User, PlusCircle,
-  FileText, Building, Hash, Link, Calendar, Briefcase as JobIcon,
-  Star, TrendingUp, Award, Clock, CheckBadge
+  FileText, Building, Hash, Link, Calendar, Briefcase as JobIcon
 } from 'lucide-react';
 import { api } from './api.js';
 import './styles.css';
@@ -253,11 +252,14 @@ function App() {
     }
   }
 
-  const isFullWidth = screen !== 0;
+  // Determine layout: single column for login and all other screens
+  // Two columns ONLY for signup (screen 0 and not in login mode)
+  const isTwoColumnLayout = screen === 0 && !showLogin;
 
   return (
-    <main className={isFullWidth ? "dashboard-shell" : "app-shell"}>
-      {screen === 0 && (
+    <main className={isTwoColumnLayout ? "app-shell" : "dashboard-shell"}>
+      {/* Hero panel - ONLY on Sign Up page (screen 0 AND NOT in login mode) */}
+      {isTwoColumnLayout && (
         <section className="hero-panel">
           <div className="brand-row">
             <div className="brand-mark"><Briefcase size={26} /></div>
@@ -299,6 +301,7 @@ function App() {
         
         {apiError && <div className="api-error" style={{ marginBottom: 12 }}>{apiError}</div>}
 
+        {/* LOGIN SCREEN */}
         {showLogin && (
           <LoginScreen 
             profile={profile} 
@@ -316,6 +319,7 @@ function App() {
           />
         )}
 
+        {/* SIGN UP SCREEN */}
         {!showLogin && screen === 0 && (
           <SignUpScreen 
             profile={profile} 
@@ -336,6 +340,7 @@ function App() {
           />
         )}
 
+        {/* OTHER SCREENS */}
         {!showLogin && screen === 1 && <ProfileScreen profile={profile} setProfile={setProfile} error={error} loading={loading} onBack={goBack} onSubmit={handleProfile} />}
         {!showLogin && screen === 2 && <PreferencesScreen preferences={preferences} setPreferences={setPreferences} loading={loading} onBack={goBack} onSubmit={handlePreferences} />}
         {!showLogin && screen === 3 && <AddApplicationScreen jobForm={jobForm} setJobForm={setJobForm} preferences={preferences} error={error} loading={loading} onBack={goBack} onSubmit={handleAddApplication} />}
@@ -354,6 +359,9 @@ function App() {
   );
 }
 
+// ─────────────────────────────────────────
+// LOGIN SCREEN
+// ─────────────────────────────────────────
 function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToSignUp, showPassword, setShowPassword }) {
   return (
     <form className="screen-card" onSubmit={onSubmit}>
@@ -415,6 +423,9 @@ function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchTo
   );
 }
 
+// ─────────────────────────────────────────
+// SIGN UP SCREEN
+// ─────────────────────────────────────────
 function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToLogin, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, validatePassword }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -743,14 +754,14 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
     offer: applications.filter(a => a.status === 'Offer').length,
   };
   
-  const filtered = filter === 'All' 
-    ? [...applications].sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
-    : applications.filter(a => a.status === filter).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
-
   const getSuccessRate = () => {
     if (stats.total === 0) return 0;
     return Math.round((stats.offer / stats.total) * 100);
   };
+  
+  const filtered = filter === 'All' 
+    ? [...applications].sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+    : applications.filter(a => a.status === filter).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
   return (
     <div className="screen-card dashboard-card">
@@ -762,7 +773,7 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
         </div>
       </div>
 
-      {/* Stats Grid with Icons */}
+      {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon">📊</div>
@@ -846,7 +857,7 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
                   <select
                     value={app.status}
                     onChange={e => onStatusChange(app.id, e.target.value)}
-                    className={`status-select status-${app.status.toLowerCase()}`}
+                    className="status-select"
                   >
                     {statuses.map(s => <option key={s}>{s}</option>)}
                   </select>

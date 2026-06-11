@@ -4,7 +4,6 @@ import {
   Briefcase, CalendarClock, CheckCircle2, ChevronRight,
   GraduationCap, LayoutDashboard, LockKeyhole,
   Trash2, UserPlus, Eye, EyeOff, PlusCircle,
-  FileText, Building, Hash, Link, Calendar
 } from 'lucide-react';
 import { api } from './api.js';
 import './styles.css';
@@ -64,6 +63,7 @@ function App() {
     finally { setLoading(false); }
   };
 
+  // FIX: use user.email directly instead of profile.email (stale closure)
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
@@ -74,14 +74,21 @@ function App() {
     try {
       const { user } = await api.getUser(profile.email);
       if (user && user.password === profile.password) {
-        setProfile({ 
-          email: user.email, firstName: user.first_name || '', middleName: user.middle_name || '', 
-          lastName: user.last_name || '', phone: user.phone || '', 
-          university: user.university || '', year: user.year || '', studyArea: user.study_area || '', 
+        const updatedProfile = { 
+          email: user.email, 
+          firstName: user.first_name || '', 
+          middleName: user.middle_name || '', 
+          lastName: user.last_name || '', 
+          phone: user.phone || '', 
+          university: user.university || '', 
+          year: user.year || '', 
+          studyArea: user.study_area || '', 
           password: profile.password 
-        });
+        };
+        setProfile(updatedProfile);
         setPreferences({ jobType: user.job_type || 'Internship', reminder: user.reminder_pref || 'Before deadlines' });
-        const { applications: apps } = await api.getApplications(profile.email);
+        // FIX: use user.email directly, not profile.email which may be stale
+        const { applications: apps } = await api.getApplications(user.email);
         setApplications(apps);
         setScreen(5);
       } else {
@@ -157,7 +164,10 @@ function App() {
     <main className={showTwoColumns ? "app-shell" : "dashboard-shell"}>
       {showTwoColumns && (
         <section className="hero-panel">
-          <div className="brand-row"><div className="brand-mark"><Briefcase size={28} /></div><div><p className="eyebrow">22877755</p><h1>APPLYFY</h1></div></div>
+          <div className="brand-row">
+            <div className="brand-mark"><Briefcase size={28} /></div>
+            <div><p className="eyebrow">22877755</p><h1>APPLYFY</h1></div>
+          </div>
           <h2>Apply smarter. <span className="gradient-text">Land faster.</span></h2>
           <p>A student-focused job application tracker that replaces messy spreadsheets with fast logging, clear deadlines, and real-time status tracking — backed by Supabase.</p>
           <div className="how-it-works">
@@ -173,7 +183,9 @@ function App() {
           <span>{showLogin ? 'Login' : screens[screen]}</span>
           <span>{!showLogin && screen !== 0 && screen !== 5 ? `${progress}%` : ''}</span>
         </div>
-        {!showLogin && screen !== 0 && screen !== 5 && <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>}
+        {!showLogin && screen !== 0 && screen !== 5 && (
+          <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>
+        )}
         {apiError && <div className="api-error">{apiError}</div>}
 
         {showLogin && (
@@ -202,6 +214,7 @@ function App() {
           <DashboardScreen 
             applications={applications} loading={loading} onStatusChange={handleStatusChange} 
             onDelete={handleDelete} onAddApplication={() => setScreen(3)}
+            profile={profile}
           />
         )}
       </section>
@@ -218,13 +231,18 @@ function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchTo
       <label>Email</label>
       <input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} placeholder="student@email.com" required />
       <label>Password</label>
-      <div style={{ position: 'relative' }}>
-        <input type={showPassword ? "text" : "password"} value={profile.password} onChange={e => setProfile({ ...profile, password: e.target.value })} placeholder="Enter password" style={{ paddingRight: '40px' }} required />
-        <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button>
+      <div className="input-wrapper">
+        <input type={showPassword ? "text" : "password"} value={profile.password} onChange={e => setProfile({ ...profile, password: e.target.value })} placeholder="Enter password" className="has-icon" required />
+        <button type="button" className="input-icon-btn" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
       </div>
       {error && <p className="error-text">{error}</p>}
       {loading ? <Loader /> : <button className="primary-btn" type="submit">Login <ChevronRight size={18} /></button>}
-      <div style={{ textAlign: 'center', marginTop: 16 }}><span style={{ color: '#6B7280' }}>New to Applyfy? </span><button type="button" onClick={onSwitchToSignUp} style={{ background: 'none', border: 'none', color: '#4F46E5', fontWeight: 'bold', cursor: 'pointer' }}>Create account</button></div>
+      <div className="switch-auth">
+        <span>New to Applyfy? </span>
+        <button type="button" className="link-btn" onClick={onSwitchToSignUp}>Create account</button>
+      </div>
       <small>Your data is stored securely in Supabase.</small>
     </form>
   );
@@ -240,17 +258,37 @@ function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchT
       <div className="screen-icon"><UserPlus size={26} /></div>
       <h2>Create account</h2>
       <p>Join Applyfy to start tracking your job applications.</p>
-      <div className="grid-2"><div><label>First name</label><input value={profile.firstName} onChange={e => setProfile({ ...profile, firstName: e.target.value })} placeholder="John" required /></div><div><label>Last name</label><input value={profile.lastName} onChange={e => setProfile({ ...profile, lastName: e.target.value })} placeholder="Doe" required /></div></div>
-      <div className="grid-2"><div><label>Middle name (opt)</label><input value={profile.middleName} onChange={e => setProfile({ ...profile, middleName: e.target.value })} placeholder="Robert" /></div><div><label>Contact number</label><input type="tel" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} placeholder="+61 4XX XXX XXX" required /></div></div>
-      <label>Email</label><input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} placeholder="student@email.com" required />
+      <div className="grid-2">
+        <div><label>First name</label><input value={profile.firstName} onChange={e => setProfile({ ...profile, firstName: e.target.value })} placeholder="John" required /></div>
+        <div><label>Last name</label><input value={profile.lastName} onChange={e => setProfile({ ...profile, lastName: e.target.value })} placeholder="Doe" required /></div>
+      </div>
+      <div className="grid-2">
+        <div><label>Middle name (opt)</label><input value={profile.middleName} onChange={e => setProfile({ ...profile, middleName: e.target.value })} placeholder="Robert" /></div>
+        <div><label>Contact number</label><input type="tel" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} placeholder="+61 4XX XXX XXX" required /></div>
+      </div>
+      <label>Email</label>
+      <input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} placeholder="student@email.com" required />
       <label>Password</label>
-      <div style={{ position: 'relative' }}><input type={showPassword ? "text" : "password"} value={profile.password} onChange={handlePasswordChange} placeholder="Create strong password" style={{ paddingRight: 40 }} required /><button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>{showPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
+      <div className="input-wrapper">
+        <input type={showPassword ? "text" : "password"} value={profile.password} onChange={handlePasswordChange} placeholder="Create strong password" className="has-icon" required />
+        <button type="button" className="input-icon-btn" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
       <small>8+ chars, 1 number, 1 symbol, 1 uppercase</small>
       <label>Confirm password</label>
-      <div style={{ position: 'relative' }}><input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" style={{ paddingRight: 40 }} required /><button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>{showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}</button></div>
+      <div className="input-wrapper">
+        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" className="has-icon" required />
+        <button type="button" className="input-icon-btn" onClick={() => setShowConfirmPassword(!showConfirmPassword)}>
+          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
       {(error || passwordError) && <p className="error-text">{error || passwordError}</p>}
       {loading ? <Loader /> : <button className="primary-btn" type="submit">Sign up <ChevronRight size={18} /></button>}
-      <div style={{ textAlign: 'center', marginTop: 16 }}><span style={{ color: '#6B7280' }}>Already a member? </span><button type="button" onClick={onSwitchToLogin} style={{ background: 'none', border: 'none', color: '#4F46E5', fontWeight: 'bold', cursor: 'pointer' }}>Login here</button></div>
+      <div className="switch-auth">
+        <span>Already a member? </span>
+        <button type="button" className="link-btn" onClick={onSwitchToLogin}>Login here</button>
+      </div>
       <small>By signing up, you agree to our Terms of Service.</small>
     </form>
   );
@@ -265,7 +303,11 @@ function ProfileScreen({ profile, setProfile, error, loading, onBack, onSubmit }
       <h2>Student details</h2>
       <p>Tell us about your education.</p>
       <label>University</label><input value={profile.university} onChange={e => setProfile({ ...profile, university: e.target.value })} placeholder="La Trobe University" required />
-      <label>Year level</label><select value={profile.year} onChange={e => setProfile({ ...profile, year: e.target.value })} required><option value="">Select</option><option>First year</option><option>Second year</option><option>Third year</option><option>Fourth year</option><option>Recent graduate</option></select>
+      <label>Year level</label>
+      <select value={profile.year} onChange={e => setProfile({ ...profile, year: e.target.value })} required>
+        <option value="">Select</option>
+        <option>First year</option><option>Second year</option><option>Third year</option><option>Fourth year</option><option>Recent graduate</option>
+      </select>
       <label>Study area</label><input value={profile.studyArea} onChange={e => setProfile({ ...profile, studyArea: e.target.value })} placeholder="Business / IT / Health" required />
       {error && <p className="error-text">{error}</p>}
       {loading ? <Loader /> : <div className="button-row"><button type="button" className="ghost-btn" onClick={onBack}>Back</button><button className="primary-btn" type="submit">Save & Continue</button></div>}
@@ -279,8 +321,14 @@ function PreferencesScreen({ preferences, setPreferences, loading, onBack, onSub
       <div className="screen-icon"><CalendarClock size={26} /></div>
       <h2>Job preferences</h2>
       <p>Set your job type and reminders.</p>
-      <label>Primary job type</label><select value={preferences.jobType} onChange={e => setPreferences({ ...preferences, jobType: e.target.value })}><option>Internship</option><option>Graduate role</option><option>Part-time</option><option>Casual</option></select>
-      <label>Reminder preference</label><select value={preferences.reminder} onChange={e => setPreferences({ ...preferences, reminder: e.target.value })}><option>Before deadlines</option><option>Weekly summary</option><option>Follow-up reminders</option></select>
+      <label>Primary job type</label>
+      <select value={preferences.jobType} onChange={e => setPreferences({ ...preferences, jobType: e.target.value })}>
+        <option>Internship</option><option>Graduate role</option><option>Part-time</option><option>Casual</option>
+      </select>
+      <label>Reminder preference</label>
+      <select value={preferences.reminder} onChange={e => setPreferences({ ...preferences, reminder: e.target.value })}>
+        <option>Before deadlines</option><option>Weekly summary</option><option>Follow-up reminders</option>
+      </select>
       <div className="note-box">Preferences saved to your profile.</div>
       {loading ? <Loader /> : <div className="button-row"><button type="button" className="ghost-btn" onClick={onBack}>Back</button><button className="primary-btn" type="submit">Save & Continue</button></div>}
     </form>
@@ -293,65 +341,186 @@ function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading
       <div className="screen-icon"><Briefcase size={26} /></div>
       <h2>Add application</h2>
       <p>Log a new job application.</p>
-      <div className="grid-2"><div><label>Company</label><input value={jobForm.company} onChange={e => setJobForm({ ...jobForm, company: e.target.value })} placeholder="Google" required /></div><div><label>Role</label><input value={jobForm.role} onChange={e => setJobForm({ ...jobForm, role: e.target.value })} placeholder="Software Engineer" required /></div></div>
-      <div className="grid-2"><div><label>Job type</label><select value={jobForm.type || preferences.jobType} onChange={e => setJobForm({ ...jobForm, type: e.target.value })}><option>Internship</option><option>Graduate role</option><option>Part-time</option><option>Casual</option></select></div><div><label>Deadline</label><input type="date" value={jobForm.deadline} onChange={e => setJobForm({ ...jobForm, deadline: e.target.value })} required /></div></div>
-      <div className="grid-2"><div><label>Source</label><input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn" /></div><div><label>Job link</label><input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." /></div></div>
-      <label>Notes (optional)</label><textarea value={jobForm.notes || ''} onChange={e => setJobForm({ ...jobForm, notes: e.target.value })} placeholder="Add your notes here..." rows="4" />
+      <div className="grid-2">
+        <div><label>Company</label><input value={jobForm.company} onChange={e => setJobForm({ ...jobForm, company: e.target.value })} placeholder="Google" required /></div>
+        <div><label>Role</label><input value={jobForm.role} onChange={e => setJobForm({ ...jobForm, role: e.target.value })} placeholder="Software Engineer" required /></div>
+      </div>
+      <div className="grid-2">
+        <div><label>Job type</label>
+          <select value={jobForm.type || preferences.jobType} onChange={e => setJobForm({ ...jobForm, type: e.target.value })}>
+            <option>Internship</option><option>Graduate role</option><option>Part-time</option><option>Casual</option>
+          </select>
+        </div>
+        <div><label>Deadline</label><input type="date" value={jobForm.deadline} onChange={e => setJobForm({ ...jobForm, deadline: e.target.value })} required /></div>
+      </div>
+      <div className="grid-2">
+        <div><label>Source</label><input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn" /></div>
+        <div><label>Job link</label><input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." /></div>
+      </div>
+      <label>Notes (optional)</label>
+      <textarea value={jobForm.notes || ''} onChange={e => setJobForm({ ...jobForm, notes: e.target.value })} placeholder="Add your notes here..." rows="4" />
       {error && <p className="error-text">{error}</p>}
       {loading ? <Loader /> : <div className="button-row"><button type="button" className="ghost-btn" onClick={onBack}>Back</button><button className="primary-btn" type="submit">Save to Supabase</button></div>}
     </form>
   );
 }
 
+// FIX: "Next step" and reminder text now separated clearly
 function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
   return (
     <div className="screen-card center-card">
       <div className="success-icon"><CheckCircle2 size={48} /></div>
       <h2>Application saved!</h2>
       <p>{latestApp?.company} – {latestApp?.role} saved to your dashboard.</p>
-      <div className="summary-card"><strong>Next step</strong><span>{latestApp?.reminder || 'Reminder before deadline'}</span></div>
+      <div className="summary-card">
+        <div className="summary-label">Next step</div>
+        <div className="summary-value">{latestApp?.reminder || 'Reminder before deadline'}</div>
+      </div>
       <button className="primary-btn full" onClick={onDashboard}>View tracker</button>
-      <button className="ghost-btn full" onClick={onAddAnother}>Add another application</button>
+      <button className="ghost-btn full" style={{ marginTop: 10 }} onClick={onAddAnother}>Add another application</button>
     </div>
   );
 }
 
-function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAddApplication }) {
+function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAddApplication, profile }) {
   const statuses = ['Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'];
   const [filter, setFilter] = useState('All');
-  const stats = { total: applications.length, applied: applications.filter(a => a.status === 'Applied').length, interview: applications.filter(a => a.status === 'Interview').length, offer: applications.filter(a => a.status === 'Offer').length };
+  const [openDropdown, setOpenDropdown] = useState(null);
+
+  const stats = {
+    total: applications.length,
+    inProgress: applications.filter(a => a.status === 'Applied').length,
+    interview: applications.filter(a => a.status === 'Interview').length,
+    offer: applications.filter(a => a.status === 'Offer').length,
+  };
   const getSuccessRate = () => stats.total === 0 ? 0 : Math.round((stats.offer / stats.total) * 100);
   const filtered = filter === 'All' ? [...applications] : applications.filter(a => a.status === filter);
 
+  const getDaysLeft = (deadline) => {
+    if (!deadline) return null;
+    return Math.ceil((new Date(deadline) - new Date()) / 86400000);
+  };
+
   return (
-    <div className="screen-card">
-      <div className="dashboard-header"><div className="screen-icon"><LayoutDashboard size={26} /></div><div><h2>Tracker dashboard</h2><p>All your applications loaded from Supabase.</p></div></div>
-      <div className="stats-grid">
-        <div className="stat-card"><div className="stat-icon">📊</div><div className="stat-value">{stats.total}</div><div className="stat-label">Total applied</div></div>
-        <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-value">{stats.applied}</div><div className="stat-label">In progress</div></div>
-        <div className="stat-card"><div className="stat-icon">🎯</div><div className="stat-value">{stats.interview}</div><div className="stat-label">Interviews</div></div>
-        <div className="stat-card"><div className="stat-icon">🏆</div><div className="stat-value">{stats.offer}</div><div className="stat-label">Offers</div></div>
-        <div className="stat-card success-rate"><div className="stat-icon">📈</div><div className="stat-value">{getSuccessRate()}%</div><div className="stat-label">Success rate</div></div>
+    <div className="screen-card dashboard-card">
+      {/* Header */}
+      <div className="dashboard-header">
+        <div className="screen-icon"><LayoutDashboard size={22} /></div>
+        <div>
+          <h2>Tracker dashboard</h2>
+          <p className="dashboard-sub">
+            {profile?.firstName ? `Welcome back, ${profile.firstName}.` : 'All your applications.'}
+          </p>
+        </div>
       </div>
-      <div className="filter-buttons">{['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => <button key={f} onClick={() => setFilter(f)} className={`filter-btn ${filter === f ? 'active' : ''}`}>{f}</button>)}</div>
-      <button className="primary-btn add-btn" onClick={onAddApplication}><PlusCircle size={18} /> Add New Application</button>
+
+      {/* Stats */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-icon">📊</div>
+          <div className="stat-value">{stats.total}</div>
+          <div className="stat-label">Total Applied</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">⏳</div>
+          <div className="stat-value">{stats.inProgress}</div>
+          <div className="stat-label">In Progress</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">🎯</div>
+          <div className="stat-value">{stats.interview}</div>
+          <div className="stat-label">Interviews</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-icon">🏆</div>
+          <div className="stat-value">{stats.offer}</div>
+          <div className="stat-label">Offers</div>
+        </div>
+        <div className="stat-card success-rate">
+          <div className="stat-icon">📈</div>
+          <div className="stat-value">{getSuccessRate()}%</div>
+          <div className="stat-label">Success Rate</div>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="filter-buttons">
+        {['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`filter-btn ${filter === f ? 'active' : ''}`}>{f}</button>
+        ))}
+      </div>
+
+      {/* Add button */}
+      <button className="primary-btn add-btn" onClick={onAddApplication}>
+        <PlusCircle size={16} /> Add New Application
+      </button>
+
+      {/* List */}
       {loading ? <Loader /> : (
         <div className="application-list">
-          {filtered.length === 0 ? <div className="empty-state"><Briefcase size={48} /><p>No applications yet. Click "Add New Application" to start!</p></div> :
-            filtered.map(app => (
-              <article className="application-item" key={app.id}>
-                <div className="application-info">
-                  <div className="application-header"><span className="company-name">{app.company}</span><span className="role-name">{app.role}</span><span className="job-type-badge">{app.type}</span></div>
-                  <div className="application-meta"><span>📅 {app.deadline ? `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left` : 'No deadline'}</span><span>🔗 {app.source || 'Manual'}</span></div>
-                  {app.notes && <div className="application-notes"><small>📝 {app.notes.length > 100 ? app.notes.substring(0, 100) + '...' : app.notes}</small></div>}
-                </div>
-                <div className="item-actions">
-                  <select value={app.status} onChange={e => onStatusChange(app.id, e.target.value)} className="status-select">{statuses.map(s => <option key={s}>{s}</option>)}</select>
-                  <div className="status-badge" data-status={app.status}>{app.status}</div>
-                  <button className="delete-btn" onClick={() => onDelete(app.id)}><Trash2 size={14} /> Delete</button>
-                </div>
-              </article>
-            ))}
+          {filtered.length === 0
+            ? <div className="empty-state"><Briefcase size={40} /><p>No applications yet. Add one above!</p></div>
+            : filtered.map(app => {
+                const daysLeft = getDaysLeft(app.deadline);
+                const isUrgent = daysLeft !== null && daysLeft <= 3;
+                return (
+                  <article className="application-item" key={app.id}>
+                    <div className="application-info">
+                      <div className="application-header">
+                        {/* FIX: company-name now uses DM Sans bold, not Syne */}
+                        <span className="company-name">{app.company}</span>
+                        <span className="job-type-badge">{app.type}</span>
+                      </div>
+                      <div className="role-name">{app.role}</div>
+                      <div className="application-meta">
+                        {app.deadline && (
+                          <span className={isUrgent ? 'deadline-urgent' : ''}>
+                            📅 {daysLeft < 0 ? 'Expired' : daysLeft === 0 ? 'Due today' : `${daysLeft}d left`}
+                          </span>
+                        )}
+                        {app.source && <span>🔗 {app.source}</span>}
+                      </div>
+                      {app.notes && (
+                        <div className="application-notes">
+                          <small>{app.notes.length > 100 ? app.notes.substring(0, 100) + '…' : app.notes}</small>
+                        </div>
+                      )}
+                    </div>
+                    <div className="item-actions">
+                      <div className="status-dropdown-wrapper">
+                        <button
+                          type="button"
+                          className="status-dropdown-btn"
+                          onClick={() => setOpenDropdown(openDropdown === app.id ? null : app.id)}
+                        >
+                          <span className={`status-dot status-dot--${app.status.toLowerCase()}`} />
+                          {app.status}
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        </button>
+                        {openDropdown === app.id && (
+                          <div className="status-dropdown-menu">
+                            {statuses.map(s => (
+                              <button
+                                key={s}
+                                type="button"
+                                className={`status-option ${app.status === s ? 'active' : ''}`}
+                                onClick={() => { onStatusChange(app.id, s); setOpenDropdown(null); }}
+                              >
+                                <span className={`status-dot status-dot--${s.toLowerCase()}`} />
+                                {s}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <button className="delete-btn" onClick={() => onDelete(app.id)}>
+                        <Trash2 size={13} /> Delete
+                      </button>
+                    </div>
+                  </article>
+                );
+              })
+          }
         </div>
       )}
     </div>

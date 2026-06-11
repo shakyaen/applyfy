@@ -40,6 +40,7 @@ function App() {
     return null;
   };
 
+  // SIGN UP
   const handleSignUp = async (e) => {
     e.preventDefault();
     if (!profile.firstName.trim()) { setError('First name required'); return; }
@@ -53,25 +54,46 @@ function App() {
     try {
       const { user } = await api.getUser(profile.email);
       if (user) { setError('Email exists. Login instead.'); setLoading(false); return; }
-      await api.upsertUser({ email: profile.email, password: profile.password, first_name: profile.firstName, middle_name: profile.middleName, last_name: profile.lastName, phone: profile.phone, university: '', year: '', study_area: '', job_type: preferences.jobType, reminder_pref: preferences.reminder });
+      await api.upsertUser({ 
+        email: profile.email, password: profile.password, 
+        first_name: profile.firstName, middle_name: profile.middleName, last_name: profile.lastName, 
+        phone: profile.phone, university: '', year: '', study_area: '', 
+        job_type: preferences.jobType, reminder_pref: preferences.reminder 
+      });
       goNext();
     } catch (err) { setApiError(err.message); }
     finally { setLoading(false); }
   };
 
+  // LOGIN - FIXED
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
     if (!profile.email) { setError('Email required'); return; }
     if (!profile.password) { setError('Password required'); return; }
+    
     setLoading(true);
     try {
       const { user } = await api.getUser(profile.email);
       if (user && user.password === profile.password) {
-        setProfile({ email: user.email, firstName: user.first_name || '', middleName: user.middle_name || '', lastName: user.last_name || '', phone: user.phone || '', university: user.university || '', year: user.year || '', studyArea: user.study_area || '', password: profile.password });
+        setProfile({ 
+          email: user.email, firstName: user.first_name || '', middleName: user.middle_name || '', 
+          lastName: user.last_name || '', phone: user.phone || '', 
+          university: user.university || '', year: user.year || '', studyArea: user.study_area || '', 
+          password: profile.password 
+        });
         setPreferences({ jobType: user.job_type || 'Internship', reminder: user.reminder_pref || 'Before deadlines' });
+        // Load applications
+        const { applications: apps } = await api.getApplications(profile.email);
+        setApplications(apps);
+        // GO DIRECTLY TO DASHBOARD
         setScreen(5);
-      } else { setError('Invalid email or password'); }
-    } catch (err) { setApiError(err.message); }
+      } else {
+        setError('Invalid email or password');
+      }
+    } catch (err) { 
+      setApiError(err.message); 
+    }
     finally { setLoading(false); }
   };
 
@@ -133,6 +155,14 @@ function App() {
     catch (err) { setApiError(err.message); }
   };
 
+  // RESET TO SIGN UP PAGE
+  const resetToSignUp = () => {
+    setShowLogin(false);
+    setScreen(0);
+    setError('');
+    setProfile({ ...profile, password: '' });
+  };
+
   const showTwoColumns = screen === 0 && !showLogin;
 
   return (
@@ -151,29 +181,80 @@ function App() {
       )}
 
       <section className="phone-panel">
-        <div className="step-header"><span>{showLogin ? 'Login' : screens[screen]}</span><span>{!showLogin && screen !== 0 && screen !== 5 ? `${progress}%` : ''}</span></div>
+        <div className="step-header">
+          <span>{showLogin ? 'Login' : screens[screen]}</span>
+          <span>{!showLogin && screen !== 0 && screen !== 5 ? `${progress}%` : ''}</span>
+        </div>
         {!showLogin && screen !== 0 && screen !== 5 && <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>}
         {apiError && <div className="api-error">{apiError}</div>}
 
-        {showLogin && <LoginScreen profile={profile} setProfile={setProfile} error={error} loading={loading} onSubmit={handleLogin} onSwitchToSignUp={() => { setShowLogin(false); setError(''); setProfile({ ...profile, password: '' }); }} showPassword={showPassword} setShowPassword={setShowPassword} />}
-        {!showLogin && screen === 0 && <SignUpScreen profile={profile} setProfile={setProfile} error={error} loading={loading} onSubmit={handleSignUp} onSwitchToLogin={() => { setShowLogin(true); setError(''); setProfile({ ...profile, password: '' }); }} showPassword={showPassword} setShowPassword={setShowPassword} showConfirmPassword={showConfirmPassword} setShowConfirmPassword={setShowConfirmPassword} validatePassword={validatePassword} />}
+        {/* LOGIN SCREEN */}
+        {showLogin && (
+          <LoginScreen 
+            profile={profile} 
+            setProfile={setProfile} 
+            error={error} 
+            loading={loading} 
+            onSubmit={handleLogin}
+            onSwitchToSignUp={() => {
+              setShowLogin(false);
+              setError('');
+              setProfile({ ...profile, password: '' });
+            }}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+          />
+        )}
+
+        {/* SIGN UP SCREEN */}
+        {!showLogin && screen === 0 && (
+          <SignUpScreen 
+            profile={profile} 
+            setProfile={setProfile} 
+            error={error} 
+            loading={loading} 
+            onSubmit={handleSignUp}
+            onSwitchToLogin={() => {
+              setShowLogin(true);
+              setError('');
+              setProfile({ ...profile, password: '' });
+            }}
+            showPassword={showPassword}
+            setShowPassword={setShowPassword}
+            showConfirmPassword={showConfirmPassword}
+            setShowConfirmPassword={setShowConfirmPassword}
+            validatePassword={validatePassword}
+          />
+        )}
+
+        {/* OTHER SCREENS */}
         {!showLogin && screen === 1 && <ProfileScreen profile={profile} setProfile={setProfile} error={error} loading={loading} onBack={goBack} onSubmit={handleProfile} />}
         {!showLogin && screen === 2 && <PreferencesScreen preferences={preferences} setPreferences={setPreferences} loading={loading} onBack={goBack} onSubmit={handlePreferences} />}
         {!showLogin && screen === 3 && <AddApplicationScreen jobForm={jobForm} setJobForm={setJobForm} preferences={preferences} error={error} loading={loading} onBack={goBack} onSubmit={handleAddApplication} />}
         {!showLogin && screen === 4 && <SuccessScreen latestApp={latestApp} onAddAnother={() => setScreen(3)} onDashboard={() => setScreen(5)} />}
-        {!showLogin && screen === 5 && <DashboardScreen applications={applications} loading={loading} onStatusChange={handleStatusChange} onDelete={handleDelete} onAddApplication={() => setScreen(3)} />}
+        {!showLogin && screen === 5 && (
+          <DashboardScreen 
+            applications={applications} 
+            loading={loading} 
+            onStatusChange={handleStatusChange} 
+            onDelete={handleDelete} 
+            onAddApplication={() => setScreen(3)}
+          />
+        )}
       </section>
     </main>
   );
 }
 
+// LOGIN SCREEN
 function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToSignUp, showPassword, setShowPassword }) {
   return (
     <form className="screen-card" onSubmit={onSubmit}>
       <div className="screen-icon"><LockKeyhole size={26} /></div>
       <h2>Welcome back</h2>
       <p>Enter your email and password to access your dashboard.</p>
-      <label>Email</label><input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} placeholder="student@email.com" required />
+      <label>Email</label>
+      <input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} placeholder="student@email.com" required />
       <label>Password</label>
       <div style={{ position: 'relative' }}>
         <input type={showPassword ? "text" : "password"} value={profile.password} onChange={e => setProfile({ ...profile, password: e.target.value })} placeholder="Enter password" style={{ paddingRight: '40px' }} required />
@@ -187,6 +268,7 @@ function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchTo
   );
 }
 
+// SIGN UP SCREEN
 function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToLogin, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, validatePassword }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -230,89 +312,4 @@ function ProfileScreen({ profile, setProfile, error, loading, onBack, onSubmit }
   );
 }
 
-function PreferencesScreen({ preferences, setPreferences, loading, onBack, onSubmit }) {
-  return (
-    <form className="screen-card" onSubmit={onSubmit}>
-      <div className="screen-icon"><CalendarClock size={26} /></div>
-      <h2>Job preferences</h2>
-      <p>Set your job type and reminders.</p>
-      <label>Primary job type</label><select value={preferences.jobType} onChange={e => setPreferences({ ...preferences, jobType: e.target.value })}><option>Internship</option><option>Graduate role</option><option>Part-time</option><option>Casual</option></select>
-      <label>Reminder preference</label><select value={preferences.reminder} onChange={e => setPreferences({ ...preferences, reminder: e.target.value })}><option>Before deadlines</option><option>Weekly summary</option><option>Follow-up reminders</option></select>
-      <div className="note-box">Preferences saved to your profile.</div>
-      {loading ? <Loader /> : <div className="button-row"><button type="button" className="ghost-btn" onClick={onBack}>Back</button><button className="primary-btn" type="submit">Save & Continue</button></div>}
-    </form>
-  );
-}
-
-function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading, onBack, onSubmit }) {
-  return (
-    <form className="screen-card" onSubmit={onSubmit}>
-      <div className="screen-icon"><Briefcase size={26} /></div>
-      <h2>Add application</h2>
-      <p>Log a new job application.</p>
-      <div className="grid-2"><div><label>Company</label><input value={jobForm.company} onChange={e => setJobForm({ ...jobForm, company: e.target.value })} placeholder="Google" required /></div><div><label>Role</label><input value={jobForm.role} onChange={e => setJobForm({ ...jobForm, role: e.target.value })} placeholder="Software Engineer" required /></div></div>
-      <div className="grid-2"><div><label>Job type</label><select value={jobForm.type || preferences.jobType} onChange={e => setJobForm({ ...jobForm, type: e.target.value })}><option>Internship</option><option>Graduate role</option><option>Part-time</option><option>Casual</option></select></div><div><label>Deadline</label><input type="date" value={jobForm.deadline} onChange={e => setJobForm({ ...jobForm, deadline: e.target.value })} required /></div></div>
-      <div className="grid-2"><div><label>Source</label><input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn" /></div><div><label>Job link</label><input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." /></div></div>
-      <label>Notes (optional)</label><textarea value={jobForm.notes || ''} onChange={e => setJobForm({ ...jobForm, notes: e.target.value })} placeholder="Add your notes here..." rows="4" />
-      {error && <p className="error-text">{error}</p>}
-      {loading ? <Loader /> : <div className="button-row"><button type="button" className="ghost-btn" onClick={onBack}>Back</button><button className="primary-btn" type="submit">Save to Supabase</button></div>}
-    </form>
-  );
-}
-
-function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
-  return (
-    <div className="screen-card center-card">
-      <div className="success-icon"><CheckCircle2 size={48} /></div>
-      <h2>Application saved!</h2>
-      <p>{latestApp?.company} – {latestApp?.role} saved to your dashboard.</p>
-      <div className="summary-card"><strong>Next step</strong><span>{latestApp?.reminder || 'Reminder before deadline'}</span></div>
-      <button className="primary-btn full" onClick={onDashboard}>View tracker</button>
-      <button className="ghost-btn full" onClick={onAddAnother}>Add another application</button>
-    </div>
-  );
-}
-
-function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAddApplication }) {
-  const statuses = ['Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'];
-  const [filter, setFilter] = useState('All');
-  const stats = { total: applications.length, applied: applications.filter(a => a.status === 'Applied').length, interview: applications.filter(a => a.status === 'Interview').length, offer: applications.filter(a => a.status === 'Offer').length };
-  const getSuccessRate = () => stats.total === 0 ? 0 : Math.round((stats.offer / stats.total) * 100);
-  const filtered = filter === 'All' ? [...applications] : applications.filter(a => a.status === filter);
-
-  return (
-    <div className="screen-card">
-      <div className="dashboard-header"><div className="screen-icon"><LayoutDashboard size={26} /></div><div><h2>Tracker dashboard</h2><p>All your applications loaded from Supabase.</p></div></div>
-      <div className="stats-grid">
-        <div className="stat-card"><div className="stat-icon">📊</div><div className="stat-value">{stats.total}</div><div className="stat-label">Total applied</div></div>
-        <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-value">{stats.applied}</div><div className="stat-label">In progress</div></div>
-        <div className="stat-card"><div className="stat-icon">🎯</div><div className="stat-value">{stats.interview}</div><div className="stat-label">Interviews</div></div>
-        <div className="stat-card"><div className="stat-icon">🏆</div><div className="stat-value">{stats.offer}</div><div className="stat-label">Offers</div></div>
-        <div className="stat-card success-rate"><div className="stat-icon">📈</div><div className="stat-value">{getSuccessRate()}%</div><div className="stat-label">Success rate</div></div>
-      </div>
-      <div className="filter-buttons">{['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => <button key={f} onClick={() => setFilter(f)} className={`filter-btn ${filter === f ? 'active' : ''}`}>{f}</button>)}</div>
-      <button className="primary-btn add-btn" onClick={onAddApplication}><PlusCircle size={18} /> Add New Application</button>
-      {loading ? <Loader /> : (
-        <div className="application-list">
-          {filtered.length === 0 ? <div className="empty-state"><Briefcase size={48} /><p>No applications yet. Click "Add New Application" to start!</p></div> :
-            filtered.map(app => (
-              <article className="application-item" key={app.id}>
-                <div className="application-info">
-                  <div className="application-header"><span className="company-name">{app.company}</span><span className="role-name">{app.role}</span><span className="job-type-badge">{app.type}</span></div>
-                  <div className="application-meta"><span>📅 {app.deadline ? `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left` : 'No deadline'}</span><span>🔗 {app.source || 'Manual'}</span></div>
-                  {app.notes && <div className="application-notes"><small>📝 {app.notes.length > 100 ? app.notes.substring(0, 100) + '...' : app.notes}</small></div>}
-                </div>
-                <div className="item-actions">
-                  <select value={app.status} onChange={e => onStatusChange(app.id, e.target.value)} className="status-select">{statuses.map(s => <option key={s}>{s}</option>)}</select>
-                  <div className="status-badge" data-status={app.status}>{app.status}</div>
-                  <button className="delete-btn" onClick={() => onDelete(app.id)}><Trash2 size={14} /> Delete</button>
-                </div>
-              </article>
-            ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-createRoot(document.getElementById('root')).render(<App />);
+function PreferencesScreen({ preferences, setPreferences

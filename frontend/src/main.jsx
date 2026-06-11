@@ -90,6 +90,7 @@ function App() {
         // FIX: use user.email directly, not profile.email which may be stale
         const { applications: apps } = await api.getApplications(user.email);
         setApplications(apps);
+        setShowLogin(false);
         setScreen(5);
       } else {
         setError('Invalid email or password');

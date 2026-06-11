@@ -3,7 +3,9 @@ import { createRoot } from 'react-dom/client';
 import {
   Briefcase, CalendarClock, CheckCircle2, ChevronRight,
   GraduationCap, LayoutDashboard, LockKeyhole, ShieldCheck,
-  Sparkles, Trash2, UserPlus, Eye, EyeOff, Phone, Mail, User, PlusCircle
+  Sparkles, Trash2, UserPlus, Eye, EyeOff, Phone, Mail, User, PlusCircle,
+  FileText, Building, Hash, Link, Calendar, Briefcase as JobIcon,
+  Star, TrendingUp, Award, Clock, CheckBadge
 } from 'lucide-react';
 import { api } from './api.js';
 import './styles.css';
@@ -29,7 +31,7 @@ function App() {
   });
   const [preferences, setPreferences] = useState({ jobType: 'Internship', reminder: 'Before deadlines' });
   const [applications, setApplications] = useState([]);
-  const [jobForm, setJobForm] = useState({ company: '', role: '', type: 'Internship', deadline: '', source: '', link: '' });
+  const [jobForm, setJobForm] = useState({ company: '', role: '', type: 'Internship', deadline: '', source: '', link: '', notes: '' });
   const [error, setError] = useState('');
   const [apiError, setApiError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,6 @@ function App() {
   function goNext() { setError(''); setApiError(''); setScreen(s => Math.min(s + 1, screens.length - 1)); }
   function goBack() { setError(''); setApiError(''); setScreen(s => Math.max(s - 1, 0)); }
 
-  // Password validation
   const validatePassword = (password) => {
     if (password.length < 8) return 'Password must be at least 8 characters';
     if (!/[0-9]/.test(password)) return 'Password must contain at least 1 number';
@@ -51,10 +52,8 @@ function App() {
     return null;
   };
 
-  // ── Sign Up ──
   async function handleSignUp(e) {
     e.preventDefault();
-    
     if (!profile.firstName.trim()) { setError('First name is required'); return; }
     if (!profile.lastName.trim()) { setError('Last name is required'); return; }
     if (!profile.email.trim()) { setError('Email address is required'); return; }
@@ -95,7 +94,6 @@ function App() {
     }
   }
 
-  // ── Login (returning user) ──
   async function handleLogin(e) {
     e.preventDefault();
     if (!profile.email.trim()) { setError('Please enter your email address.'); return; }
@@ -118,11 +116,9 @@ function App() {
         });
         setPreferences({ jobType: user.job_type || 'Internship', reminder: user.reminder_pref || 'Before deadlines' });
         
-        // Load existing applications
         const { applications: apps } = await api.getApplications(profile.email.trim());
         setApplications(apps);
         
-        // RETURNING USER GOES DIRECTLY TO DASHBOARD
         setScreen(5);
       } else {
         setError('Invalid email or password');
@@ -134,7 +130,6 @@ function App() {
     }
   }
 
-  // ── Student Details ──
   async function handleProfile(e) {
     e.preventDefault();
     if (!profile.university || !profile.year || !profile.studyArea.trim()) {
@@ -164,7 +159,6 @@ function App() {
     }
   }
 
-  // ── Preferences ──
   async function handlePreferences(e) {
     e.preventDefault();
     setLoading(true);
@@ -190,7 +184,6 @@ function App() {
     }
   }
 
-  // ── Add Application ──
   async function handleAddApplication(e) {
     e.preventDefault();
     if (!jobForm.company.trim() || !jobForm.role.trim() || !jobForm.deadline) {
@@ -210,12 +203,13 @@ function App() {
         deadline: jobForm.deadline,
         source: jobForm.source,
         link: jobForm.link,
+        notes: jobForm.notes,
         status: 'Applied',
         reminder,
       });
       setLatestApp(application);
       setApplications(prev => [application, ...prev]);
-      setJobForm({ company: '', role: '', type: preferences.jobType, deadline: '', source: '', link: '' });
+      setJobForm({ company: '', role: '', type: preferences.jobType, deadline: '', source: '', link: '', notes: '' });
       goNext();
     } catch (err) {
       setApiError(`Could not save application: ${err.message}`);
@@ -224,7 +218,6 @@ function App() {
     }
   }
 
-  // ── Load applications for Dashboard ──
   const loadApplications = useCallback(async () => {
     if (!profile.email) return;
     setLoading(true);
@@ -260,10 +253,11 @@ function App() {
     }
   }
 
+  const isFullWidth = screen !== 0;
+
   return (
-    <main className="app-shell">
-      {/* Hero panel - only on Sign Up and Login screens */}
-      {(screen === 0 || (screen === 0 && showLogin)) && (
+    <main className={isFullWidth ? "dashboard-shell" : "app-shell"}>
+      {screen === 0 && (
         <section className="hero-panel">
           <div className="brand-row">
             <div className="brand-mark"><Briefcase size={26} /></div>
@@ -272,14 +266,26 @@ function App() {
               <h1>APPLYFY</h1>
             </div>
           </div>
-          <h2>Apply smarter. Land faster.</h2>
+          <h2>Apply smarter. <span className="gradient-text">Land faster.</span></h2>
           <p>
             A student-focused job application tracker that replaces messy spreadsheets with fast logging, clear deadlines, and real-time status tracking — backed by Supabase.
           </p>
           <div className="how-it-works">
-            <div className="how-card"><div className="how-icon">📝</div><h3>30-second entry</h3><p>Log job applications quickly without spreadsheet friction.</p></div>
-            <div className="how-card"><div className="how-icon">⏰</div><h3>Deadline awareness</h3><p>Keep upcoming deadlines and follow-ups visible.</p></div>
-            <div className="how-card"><div className="how-icon">💾</div><h3>Persistent data</h3><p>Your applications are saved to Supabase and available next time you log in.</p></div>
+            <div className="how-card">
+              <div className="how-icon">📝</div>
+              <h3>30-second entry</h3>
+              <p>Log job applications quickly without spreadsheet friction.</p>
+            </div>
+            <div className="how-card">
+              <div className="how-icon">⏰</div>
+              <h3>Deadline awareness</h3>
+              <p>Keep upcoming deadlines and follow-ups visible.</p>
+            </div>
+            <div className="how-card">
+              <div className="how-icon">💾</div>
+              <h3>Persistent data</h3>
+              <p>Your applications are saved to Supabase and available next time you log in.</p>
+            </div>
           </div>
         </section>
       )}
@@ -293,7 +299,6 @@ function App() {
         
         {apiError && <div className="api-error" style={{ marginBottom: 12 }}>{apiError}</div>}
 
-        {/* LOGIN SCREEN - for returning users */}
         {showLogin && (
           <LoginScreen 
             profile={profile} 
@@ -311,7 +316,6 @@ function App() {
           />
         )}
 
-        {/* SIGN UP SCREEN - for new users */}
         {!showLogin && screen === 0 && (
           <SignUpScreen 
             profile={profile} 
@@ -332,13 +336,10 @@ function App() {
           />
         )}
 
-        {/* Other screens for new users only */}
         {!showLogin && screen === 1 && <ProfileScreen profile={profile} setProfile={setProfile} error={error} loading={loading} onBack={goBack} onSubmit={handleProfile} />}
         {!showLogin && screen === 2 && <PreferencesScreen preferences={preferences} setPreferences={setPreferences} loading={loading} onBack={goBack} onSubmit={handlePreferences} />}
         {!showLogin && screen === 3 && <AddApplicationScreen jobForm={jobForm} setJobForm={setJobForm} preferences={preferences} error={error} loading={loading} onBack={goBack} onSubmit={handleAddApplication} />}
         {!showLogin && screen === 4 && <SuccessScreen latestApp={latestApp} onAddAnother={() => setScreen(3)} onDashboard={() => setScreen(5)} />}
-        
-        {/* DASHBOARD SCREEN - for both new and returning users */}
         {!showLogin && screen === 5 && (
           <DashboardScreen 
             applications={applications} 
@@ -353,9 +354,6 @@ function App() {
   );
 }
 
-// ─────────────────────────────────────────
-// LOGIN SCREEN
-// ─────────────────────────────────────────
 function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToSignUp, showPassword, setShowPassword }) {
   return (
     <form className="screen-card" onSubmit={onSubmit}>
@@ -417,9 +415,6 @@ function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchTo
   );
 }
 
-// ─────────────────────────────────────────
-// SIGN UP SCREEN
-// ─────────────────────────────────────────
 function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToLogin, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, validatePassword }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState('');
@@ -561,9 +556,6 @@ function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchT
   );
 }
 
-// ─────────────────────────────────────────
-// LOADER
-// ─────────────────────────────────────────
 function Loader() {
   return (
     <div className="loading-overlay">
@@ -573,9 +565,6 @@ function Loader() {
   );
 }
 
-// ─────────────────────────────────────────
-// STUDENT DETAILS SCREEN
-// ─────────────────────────────────────────
 function ProfileScreen({ profile, setProfile, error, loading, onBack, onSubmit }) {
   return (
     <form className="screen-card" onSubmit={onSubmit}>
@@ -624,9 +613,6 @@ function ProfileScreen({ profile, setProfile, error, loading, onBack, onSubmit }
   );
 }
 
-// ─────────────────────────────────────────
-// PREFERENCES SCREEN
-// ─────────────────────────────────────────
 function PreferencesScreen({ preferences, setPreferences, loading, onBack, onSubmit }) {
   return (
     <form className="screen-card" onSubmit={onSubmit}>
@@ -663,9 +649,6 @@ function PreferencesScreen({ preferences, setPreferences, loading, onBack, onSub
   );
 }
 
-// ─────────────────────────────────────────
-// ADD APPLICATION SCREEN
-// ─────────────────────────────────────────
 function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading, onBack, onSubmit }) {
   return (
     <form className="screen-card" onSubmit={onSubmit}>
@@ -674,16 +657,16 @@ function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading
       <p>Log a new job application to your tracker.</p>
       
       <div className="grid-2">
-        <label>Company
-          <input value={jobForm.company} onChange={e => setJobForm({ ...jobForm, company: e.target.value })} placeholder="Company name" required />
+        <label><Building size={14} /> Company
+          <input value={jobForm.company} onChange={e => setJobForm({ ...jobForm, company: e.target.value })} placeholder="e.g., Google, Atlassian" required />
         </label>
-        <label>Role
-          <input value={jobForm.role} onChange={e => setJobForm({ ...jobForm, role: e.target.value })} placeholder="Role title" required />
+        <label><Hash size={14} /> Role
+          <input value={jobForm.role} onChange={e => setJobForm({ ...jobForm, role: e.target.value })} placeholder="e.g., Software Engineer" required />
         </label>
       </div>
       
       <div className="grid-2">
-        <label>Job type
+        <label><JobIcon size={14} /> Job type
           <select value={jobForm.type || preferences.jobType} onChange={e => setJobForm({ ...jobForm, type: e.target.value })}>
             <option>Internship</option>
             <option>Graduate role</option>
@@ -691,17 +674,28 @@ function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading
             <option>Casual</option>
           </select>
         </label>
-        <label>Deadline
+        <label><Calendar size={14} /> Deadline
           <input type="date" value={jobForm.deadline} onChange={e => setJobForm({ ...jobForm, deadline: e.target.value })} required />
         </label>
       </div>
       
-      <label>Source
-        <input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn / Seek / Company site" />
-      </label>
+      <div className="grid-2">
+        <label><Briefcase size={14} /> Source
+          <input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn / Seek / Company site" />
+        </label>
+        <label><Link size={14} /> Job link
+          <input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." />
+        </label>
+      </div>
       
-      <label>Job link
-        <input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." />
+      <label><FileText size={14} /> Notes (optional)
+        <textarea 
+          value={jobForm.notes || ''} 
+          onChange={e => setJobForm({ ...jobForm, notes: e.target.value })} 
+          placeholder="e.g., Applied via referral, mentioned team culture, salary expectations..."
+          rows="4"
+          style={{ width: '100%', padding: '12px', borderRadius: '12px', border: '1px solid #d8e0f5', fontFamily: 'inherit', resize: 'vertical' }}
+        />
       </label>
       
       {error && <p className="error-text">{error}</p>}
@@ -716,9 +710,6 @@ function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading
   );
 }
 
-// ─────────────────────────────────────────
-// SUCCESS SCREEN
-// ─────────────────────────────────────────
 function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
   return (
     <div className="screen-card center-card">
@@ -741,71 +732,80 @@ function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
   );
 }
 
-// ─────────────────────────────────────────
-// DASHBOARD SCREEN
-// ─────────────────────────────────────────
 function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAddApplication }) {
   const statuses = ['Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'];
   const [filter, setFilter] = useState('All');
+  
+  const stats = {
+    total: applications.length,
+    applied: applications.filter(a => a.status === 'Applied').length,
+    interview: applications.filter(a => a.status === 'Interview').length,
+    offer: applications.filter(a => a.status === 'Offer').length,
+  };
   
   const filtered = filter === 'All' 
     ? [...applications].sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
     : applications.filter(a => a.status === filter).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
 
+  const getSuccessRate = () => {
+    if (stats.total === 0) return 0;
+    return Math.round((stats.offer / stats.total) * 100);
+  };
+
   return (
     <div className="screen-card dashboard-card">
-      <div className="screen-icon"><LayoutDashboard /></div>
-      <h2>Tracker dashboard</h2>
-      <p>All your applications are loaded live from Supabase.</p>
+      <div className="dashboard-header">
+        <div className="screen-icon"><LayoutDashboard /></div>
+        <div>
+          <h2>Tracker dashboard</h2>
+          <p>All your applications are loaded live from Supabase.</p>
+        </div>
+      </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid with Icons */}
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-value">{applications.length}</div>
+          <div className="stat-icon">📊</div>
+          <div className="stat-value">{stats.total}</div>
           <div className="stat-label">Total applied</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{applications.filter(a => a.status === 'Applied').length}</div>
+          <div className="stat-icon">⏳</div>
+          <div className="stat-value">{stats.applied}</div>
           <div className="stat-label">In progress</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{applications.filter(a => a.status === 'Interview').length}</div>
+          <div className="stat-icon">🎯</div>
+          <div className="stat-value">{stats.interview}</div>
           <div className="stat-label">Interviews</div>
         </div>
         <div className="stat-card">
-          <div className="stat-value">{applications.filter(a => a.status === 'Offer').length}</div>
+          <div className="stat-icon">🏆</div>
+          <div className="stat-value">{stats.offer}</div>
           <div className="stat-label">Offers</div>
+        </div>
+        <div className="stat-card success-rate">
+          <div className="stat-icon">📈</div>
+          <div className="stat-value">{getSuccessRate()}%</div>
+          <div className="stat-label">Success rate</div>
         </div>
       </div>
 
       {/* Filter Buttons */}
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0' }}>
+      <div className="filter-buttons">
         {['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: 20,
-              border: 'none',
-              fontWeight: 700,
-              fontSize: 13,
-              background: filter === f ? '#4F46E5' : '#eef3ff',
-              color: filter === f ? 'white' : '#4F46E5',
-              cursor: 'pointer'
-            }}
+            className={`filter-btn ${filter === f ? 'active' : ''}`}
           >
             {f}
           </button>
         ))}
       </div>
 
-      {/* Add Application Button at top */}
-      <button 
-        className="primary-btn" 
-        style={{ width: '100%', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-        onClick={onAddApplication}
-      >
+      {/* Add New Application Button */}
+      <button className="primary-btn add-btn" onClick={onAddApplication}>
         <PlusCircle size={18} /> Add New Application
       </button>
 
@@ -814,28 +814,39 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
         <div className="application-list">
           {filtered.length === 0 ? (
             <div className="empty-state">
-              <Briefcase size={40} />
+              <Briefcase size={48} />
               <p>{filter === 'All' ? 'No applications yet. Click "Add New Application" to get started!' : `No ${filter} applications!`}</p>
             </div>
           ) : (
             filtered.map(app => (
               <article className="application-item" key={app.id}>
-                <div>
-                  <strong>{app.company}</strong>
-                  <span>{app.role} · {app.type}</span>
-                  <small>
-                    {app.deadline ? (
-                      Math.ceil((new Date(app.deadline) - new Date()) / 86400000) === 1 
-                        ? '1 day left' 
-                        : `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left`
-                    ) : 'No deadline'} · {app.source || 'Manual entry'}
-                  </small>
+                <div className="application-info">
+                  <div className="application-header">
+                    <strong className="company-name">{app.company}</strong>
+                    <span className="role-name">{app.role}</span>
+                    <span className="job-type-badge">{app.type}</span>
+                  </div>
+                  <div className="application-meta">
+                    <small className="deadline">
+                      📅 {app.deadline ? (
+                        Math.ceil((new Date(app.deadline) - new Date()) / 86400000) === 1 
+                          ? '1 day left' 
+                          : `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left`
+                      ) : 'No deadline'}
+                    </small>
+                    <small className="source">🔗 {app.source || 'Manual entry'}</small>
+                  </div>
+                  {app.notes && (
+                    <div className="application-notes">
+                      <small>📝 {app.notes.length > 100 ? app.notes.substring(0, 100) + '...' : app.notes}</small>
+                    </div>
+                  )}
                 </div>
                 <div className="item-actions">
                   <select
                     value={app.status}
                     onChange={e => onStatusChange(app.id, e.target.value)}
-                    className="status-select"
+                    className={`status-select status-${app.status.toLowerCase()}`}
                   >
                     {statuses.map(s => <option key={s}>{s}</option>)}
                   </select>
@@ -843,7 +854,7 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
                     {app.status}
                   </div>
                   <button className="delete-btn" onClick={() => onDelete(app.id)}>
-                    <Trash2 size={13} /> Delete
+                    <Trash2 size={14} /> Delete
                   </button>
                 </div>
               </article>

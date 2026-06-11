@@ -30,25 +30,9 @@ export const api = {
         reminder_pref: userData.reminder_pref,
       }) 
     }),
-
-  getUser: (email) =>
-    request(`/api/users/${encodeURIComponent(email)}`),
-
-  getApplications: (userEmail) =>
-    request(`/api/applications/${encodeURIComponent(userEmail)}`),
-
-  addApplication: (data) =>
-    request('/api/applications', { 
-      method: 'POST', 
-      body: JSON.stringify(data) 
-    }),
-
-  updateStatus: (id, status) =>
-    request(`/api/applications/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status }),
-    }),
-
-  deleteApplication: (id) =>
-    request(`/api/applications/${id}`, { method: 'DELETE' }),
+  getUser: (email) => request(`/api/users/${encodeURIComponent(email)}`),
+  getApplications: (userEmail) => request(`/api/applications/${encodeURIComponent(userEmail)}`),
+  addApplication: (data) => request('/api/applications', { method: 'POST', body: JSON.stringify(data) }),
+  updateStatus: (id, status) => request(`/api/applications/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) }),
+  deleteApplication: (id) => request(`/api/applications/${id}`, { method: 'DELETE' }),
 };

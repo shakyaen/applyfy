@@ -252,13 +252,13 @@ function App() {
     }
   }
 
-  // Determine layout: single column for login and all other screens
-  // Two columns ONLY for signup (screen 0 and not in login mode)
-  const isTwoColumnLayout = screen === 0 && !showLogin;
+  // TWO COLUMN LAYOUT ONLY for Sign Up (screen === 0 AND showLogin === false)
+  // ALL other screens (Login, Dashboard, etc.) use SINGLE COLUMN
+  const isTwoColumnLayout = (screen === 0 && showLogin === false);
 
   return (
     <main className={isTwoColumnLayout ? "app-shell" : "dashboard-shell"}>
-      {/* Hero panel - ONLY on Sign Up page (screen 0 AND NOT in login mode) */}
+      {/* Hero Panel - ONLY visible on Sign Up page (two column layout) */}
       {isTwoColumnLayout && (
         <section className="hero-panel">
           <div className="brand-row">
@@ -461,22 +461,22 @@ function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchT
             required
           />
         </label>
-        <label>Middle name (optional)
-          <input 
-            value={profile.middleName} 
-            onChange={e => setProfile({ ...profile, middleName: e.target.value })} 
-            placeholder="Robert" 
-          />
-        </label>
-      </div>
-      
-      <div className="grid-2">
         <label>Last name
           <input 
             value={profile.lastName} 
             onChange={e => setProfile({ ...profile, lastName: e.target.value })} 
             placeholder="Doe" 
             required
+          />
+        </label>
+      </div>
+      
+      <div className="grid-2">
+        <label>Middle name (optional)
+          <input 
+            value={profile.middleName} 
+            onChange={e => setProfile({ ...profile, middleName: e.target.value })} 
+            placeholder="Robert" 
           />
         </label>
         <label>Contact number
@@ -773,7 +773,6 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="stats-grid">
         <div className="stat-card">
           <div className="stat-icon">📊</div>
@@ -802,7 +801,6 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
         </div>
       </div>
 
-      {/* Filter Buttons */}
       <div className="filter-buttons">
         {['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => (
           <button
@@ -815,12 +813,10 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
         ))}
       </div>
 
-      {/* Add New Application Button */}
       <button className="primary-btn add-btn" onClick={onAddApplication}>
         <PlusCircle size={18} /> Add New Application
       </button>
 
-      {/* Application List */}
       {loading ? <Loader /> : (
         <div className="application-list">
           {filtered.length === 0 ? (

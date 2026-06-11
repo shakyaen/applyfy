@@ -2,9 +2,9 @@ import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
 import {
   Briefcase, CalendarClock, CheckCircle2, ChevronRight,
-  GraduationCap, LayoutDashboard, LockKeyhole, ShieldCheck,
-  Sparkles, Trash2, UserPlus, Eye, EyeOff, Phone, Mail, User, PlusCircle,
-  FileText, Building, Hash, Link, Calendar, Briefcase as JobIcon
+  GraduationCap, LayoutDashboard, LockKeyhole,
+  Trash2, UserPlus, Eye, EyeOff, PlusCircle,
+  FileText, Building, Hash, Link, Calendar
 } from 'lucide-react';
 import { api } from './api.js';
 import './styles.css';
@@ -252,7 +252,7 @@ function App() {
     }
   }
 
-  // Two columns ONLY for Sign Up page (screen 0 AND not in login mode)
+  // Two columns ONLY for Sign Up page
   const showTwoColumns = screen === 0 && !showLogin;
 
   return (
@@ -261,7 +261,7 @@ function App() {
       {showTwoColumns && (
         <section className="hero-panel">
           <div className="brand-row">
-            <div className="brand-mark"><Briefcase size={26} /></div>
+            <div className="brand-mark"><Briefcase size={28} /></div>
             <div>
               <p className="eyebrow">22877755</p>
               <h1>APPLYFY</h1>
@@ -298,7 +298,7 @@ function App() {
         </div>
         {!showLogin && screen !== 0 && screen !== 5 && <div className="progress-track"><div style={{ width: `${progress}%` }} /></div>}
         
-        {apiError && <div className="api-error" style={{ marginBottom: 12 }}>{apiError}</div>}
+        {apiError && <div className="api-error">{apiError}</div>}
 
         {showLogin && (
           <LoginScreen 
@@ -355,5 +355,389 @@ function App() {
   );
 }
 
-// Rest of your components (LoginScreen, SignUpScreen, Loader, ProfileScreen, PreferencesScreen, AddApplicationScreen, SuccessScreen, DashboardScreen) 
-// remain exactly the same as before
+// ─────────────────────────────────────────
+// LOGIN SCREEN
+// ─────────────────────────────────────────
+function LoginScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToSignUp, showPassword, setShowPassword }) {
+  return (
+    <form className="screen-card" onSubmit={onSubmit}>
+      <div className="screen-icon"><LockKeyhole size={26} /></div>
+      <h2>Welcome back</h2>
+      <p>Enter your email and password to access your dashboard.</p>
+      
+      <label>Email address</label>
+      <input 
+        type="email" 
+        value={profile.email} 
+        onChange={e => setProfile({ ...profile, email: e.target.value })} 
+        placeholder="student@email.com" 
+        required
+      />
+      
+      <label>Password</label>
+      <div style={{ position: 'relative' }}>
+        <input 
+          type={showPassword ? "text" : "password"} 
+          value={profile.password} 
+          onChange={e => setProfile({ ...profile, password: e.target.value })} 
+          placeholder="Enter your password" 
+          style={{ paddingRight: '40px' }}
+          required
+        />
+        <button 
+          type="button" 
+          onClick={() => setShowPassword(!showPassword)} 
+          style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}
+        >
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+      
+      {error && <p className="error-text">{error}</p>}
+      
+      {loading ? <Loader /> : (
+        <button className="primary-btn" type="submit">
+          Login <ChevronRight size={18} />
+        </button>
+      )}
+      
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
+        <span style={{ color: '#6B7280' }}>New to Applyfy? </span>
+        <button type="button" onClick={onSwitchToSignUp} style={{ background: 'none', border: 'none', color: '#4F46E5', fontWeight: 'bold', cursor: 'pointer' }}>
+          Create an account
+        </button>
+      </div>
+      
+      <small>Your data is stored securely in Supabase.</small>
+    </form>
+  );
+}
+
+// ─────────────────────────────────────────
+// SIGN UP SCREEN
+// ─────────────────────────────────────────
+function SignUpScreen({ profile, setProfile, error, loading, onSubmit, onSwitchToLogin, showPassword, setShowPassword, showConfirmPassword, setShowConfirmPassword, validatePassword }) {
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+
+  const handlePasswordChange = (e) => {
+    const newPassword = e.target.value;
+    setProfile({ ...profile, password: newPassword });
+    setPasswordError(newPassword ? validatePassword(newPassword) : '');
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (profile.password !== confirmPassword) { 
+      setPasswordError('Passwords do not match'); 
+      return; 
+    }
+    if (passwordError) return;
+    onSubmit(e);
+  };
+
+  return (
+    <form className="screen-card" onSubmit={handleSubmit}>
+      <div className="screen-icon"><UserPlus size={26} /></div>
+      <h2>Create your account</h2>
+      <p>Join Applyfy to start tracking your job applications.</p>
+      
+      <div className="grid-2">
+        <div>
+          <label>First name</label>
+          <input value={profile.firstName} onChange={e => setProfile({ ...profile, firstName: e.target.value })} placeholder="John" required />
+        </div>
+        <div>
+          <label>Last name</label>
+          <input value={profile.lastName} onChange={e => setProfile({ ...profile, lastName: e.target.value })} placeholder="Doe" required />
+        </div>
+      </div>
+      
+      <div className="grid-2">
+        <div>
+          <label>Middle name (optional)</label>
+          <input value={profile.middleName} onChange={e => setProfile({ ...profile, middleName: e.target.value })} placeholder="Robert" />
+        </div>
+        <div>
+          <label>Contact number</label>
+          <input type="tel" value={profile.phone} onChange={e => setProfile({ ...profile, phone: e.target.value })} placeholder="+61 4XX XXX XXX" required />
+        </div>
+      </div>
+      
+      <label>Email address</label>
+      <input type="email" value={profile.email} onChange={e => setProfile({ ...profile, email: e.target.value })} placeholder="student@email.com" required />
+      
+      <label>Password</label>
+      <div style={{ position: 'relative' }}>
+        <input type={showPassword ? "text" : "password"} value={profile.password} onChange={handlePasswordChange} placeholder="Create a strong password" style={{ paddingRight: '40px' }} required />
+        <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
+          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+      <small>Must be at least 8 characters, include 1 number, 1 symbol, and 1 uppercase letter</small>
+      
+      <label>Confirm password</label>
+      <div style={{ position: 'relative' }}>
+        <input type={showConfirmPassword ? "text" : "password"} value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm your password" style={{ paddingRight: '40px' }} required />
+        <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer' }}>
+          {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+        </button>
+      </div>
+      
+      {(error || passwordError) && <p className="error-text">{error || passwordError}</p>}
+      
+      {loading ? <Loader /> : <button className="primary-btn" type="submit">Sign up <ChevronRight size={18} /></button>}
+      
+      <div style={{ textAlign: 'center', marginTop: '16px' }}>
+        <span style={{ color: '#6B7280' }}>Already a member? </span>
+        <button type="button" onClick={onSwitchToLogin} style={{ background: 'none', border: 'none', color: '#4F46E5', fontWeight: 'bold', cursor: 'pointer' }}>Login here</button>
+      </div>
+      
+      <small>By signing up, you agree to our Terms of Service.</small>
+    </form>
+  );
+}
+
+function Loader() {
+  return (
+    <div className="loading-overlay">
+      <div className="spinner" />
+      <span>Saving to Supabase…</span>
+    </div>
+  );
+}
+
+function ProfileScreen({ profile, setProfile, error, loading, onBack, onSubmit }) {
+  return (
+    <form className="screen-card" onSubmit={onSubmit}>
+      <div className="screen-icon"><GraduationCap size={26} /></div>
+      <h2>Student details</h2>
+      <p>Tell us about your education to personalise your experience.</p>
+      
+      <label>University</label>
+      <input value={profile.university} onChange={e => setProfile({ ...profile, university: e.target.value })} placeholder="La Trobe University" required />
+      
+      <label>Year level</label>
+      <select value={profile.year} onChange={e => setProfile({ ...profile, year: e.target.value })} required>
+        <option value="">Select year</option>
+        <option>First year</option>
+        <option>Second year</option>
+        <option>Third year</option>
+        <option>Fourth year</option>
+        <option>Recent graduate</option>
+      </select>
+      
+      <label>Study area</label>
+      <input value={profile.studyArea} onChange={e => setProfile({ ...profile, studyArea: e.target.value })} placeholder="Business / IT / Health" required />
+      
+      {error && <p className="error-text">{error}</p>}
+      
+      {loading ? <Loader /> : (
+        <div className="button-row">
+          <button type="button" className="ghost-btn" onClick={onBack}>Back</button>
+          <button className="primary-btn" type="submit">Save & Continue</button>
+        </div>
+      )}
+    </form>
+  );
+}
+
+function PreferencesScreen({ preferences, setPreferences, loading, onBack, onSubmit }) {
+  return (
+    <form className="screen-card" onSubmit={onSubmit}>
+      <div className="screen-icon"><CalendarClock size={26} /></div>
+      <h2>Job preferences</h2>
+      <p>Set your job type and reminder preferences.</p>
+      
+      <label>Primary job type</label>
+      <select value={preferences.jobType} onChange={e => setPreferences({ ...preferences, jobType: e.target.value })}>
+        <option>Internship</option>
+        <option>Graduate role</option>
+        <option>Part-time</option>
+        <option>Casual</option>
+      </select>
+      
+      <label>Reminder preference</label>
+      <select value={preferences.reminder} onChange={e => setPreferences({ ...preferences, reminder: e.target.value })}>
+        <option>Before deadlines</option>
+        <option>Weekly summary</option>
+        <option>Follow-up reminders</option>
+      </select>
+      
+      <div className="note-box">Preferences are saved to your profile for future sessions.</div>
+      
+      {loading ? <Loader /> : (
+        <div className="button-row">
+          <button type="button" className="ghost-btn" onClick={onBack}>Back</button>
+          <button className="primary-btn" type="submit">Save & Continue</button>
+        </div>
+      )}
+    </form>
+  );
+}
+
+function AddApplicationScreen({ jobForm, setJobForm, preferences, error, loading, onBack, onSubmit }) {
+  return (
+    <form className="screen-card" onSubmit={onSubmit}>
+      <div className="screen-icon"><Briefcase size={26} /></div>
+      <h2>Add application</h2>
+      <p>Log a new job application to your tracker.</p>
+      
+      <div className="grid-2">
+        <div>
+          <label><Building size={14} /> Company</label>
+          <input value={jobForm.company} onChange={e => setJobForm({ ...jobForm, company: e.target.value })} placeholder="e.g., Google, Atlassian" required />
+        </div>
+        <div>
+          <label><Hash size={14} /> Role</label>
+          <input value={jobForm.role} onChange={e => setJobForm({ ...jobForm, role: e.target.value })} placeholder="e.g., Software Engineer" required />
+        </div>
+      </div>
+      
+      <div className="grid-2">
+        <div>
+          <label>Job type</label>
+          <select value={jobForm.type || preferences.jobType} onChange={e => setJobForm({ ...jobForm, type: e.target.value })}>
+            <option>Internship</option>
+            <option>Graduate role</option>
+            <option>Part-time</option>
+            <option>Casual</option>
+          </select>
+        </div>
+        <div>
+          <label><Calendar size={14} /> Deadline</label>
+          <input type="date" value={jobForm.deadline} onChange={e => setJobForm({ ...jobForm, deadline: e.target.value })} required />
+        </div>
+      </div>
+      
+      <div className="grid-2">
+        <div>
+          <label>Source</label>
+          <input value={jobForm.source} onChange={e => setJobForm({ ...jobForm, source: e.target.value })} placeholder="LinkedIn / Seek / Company site" />
+        </div>
+        <div>
+          <label><Link size={14} /> Job link</label>
+          <input value={jobForm.link} onChange={e => setJobForm({ ...jobForm, link: e.target.value })} placeholder="https://..." />
+        </div>
+      </div>
+      
+      <label><FileText size={14} /> Notes (optional)</label>
+      <textarea 
+        value={jobForm.notes || ''} 
+        onChange={e => setJobForm({ ...jobForm, notes: e.target.value })} 
+        placeholder="e.g., Applied via referral, mentioned team culture, salary expectations..."
+        rows="4"
+      />
+      
+      {error && <p className="error-text">{error}</p>}
+      
+      {loading ? <Loader /> : (
+        <div className="button-row">
+          <button type="button" className="ghost-btn" onClick={onBack}>Back</button>
+          <button className="primary-btn" type="submit">Save to Supabase</button>
+        </div>
+      )}
+    </form>
+  );
+}
+
+function SuccessScreen({ latestApp, onAddAnother, onDashboard }) {
+  return (
+    <div className="screen-card center-card">
+      <div className="success-icon"><CheckCircle2 size={48} /></div>
+      <h2>Application saved!</h2>
+      <p>{latestApp?.company} – {latestApp?.role} has been saved to your dashboard.</p>
+      
+      <div className="summary-card">
+        <strong>Next step</strong>
+        <span>{latestApp?.reminder || 'Reminder before deadline'}</span>
+      </div>
+      
+      <button className="primary-btn full" onClick={onDashboard}>View tracker</button>
+      <button className="ghost-btn full" onClick={onAddAnother}>Add another application</button>
+    </div>
+  );
+}
+
+function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAddApplication }) {
+  const statuses = ['Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'];
+  const [filter, setFilter] = useState('All');
+  
+  const stats = {
+    total: applications.length,
+    applied: applications.filter(a => a.status === 'Applied').length,
+    interview: applications.filter(a => a.status === 'Interview').length,
+    offer: applications.filter(a => a.status === 'Offer').length,
+  };
+  
+  const getSuccessRate = () => {
+    if (stats.total === 0) return 0;
+    return Math.round((stats.offer / stats.total) * 100);
+  };
+  
+  const filtered = filter === 'All' 
+    ? [...applications].sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+    : applications.filter(a => a.status === filter).sort((a, b) => new Date(a.deadline) - new Date(b.deadline));
+
+  return (
+    <div className="screen-card">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' }}>
+        <div className="screen-icon"><LayoutDashboard size={26} /></div>
+        <div>
+          <h2>Tracker dashboard</h2>
+          <p>All your applications are loaded live from Supabase.</p>
+        </div>
+      </div>
+
+      <div className="stats-grid">
+        <div className="stat-card"><div className="stat-icon">📊</div><div className="stat-value">{stats.total}</div><div className="stat-label">Total applied</div></div>
+        <div className="stat-card"><div className="stat-icon">⏳</div><div className="stat-value">{stats.applied}</div><div className="stat-label">In progress</div></div>
+        <div className="stat-card"><div className="stat-icon">🎯</div><div className="stat-value">{stats.interview}</div><div className="stat-label">Interviews</div></div>
+        <div className="stat-card"><div className="stat-icon">🏆</div><div className="stat-value">{stats.offer}</div><div className="stat-label">Offers</div></div>
+        <div className="stat-card success-rate"><div className="stat-icon">📈</div><div className="stat-value">{getSuccessRate()}%</div><div className="stat-label">Success rate</div></div>
+      </div>
+
+      <div className="filter-buttons">
+        {['All', 'Applied', 'Interview', 'Offer', 'Rejected', 'Ghosted'].map(f => (
+          <button key={f} onClick={() => setFilter(f)} className={`filter-btn ${filter === f ? 'active' : ''}`}>{f}</button>
+        ))}
+      </div>
+
+      <button className="primary-btn add-btn" onClick={onAddApplication}><PlusCircle size={18} /> Add New Application</button>
+
+      {loading ? <Loader /> : (
+        <div className="application-list">
+          {filtered.length === 0 ? (
+            <div className="empty-state"><Briefcase size={48} /><p>No applications yet. Click "Add New Application" to get started!</p></div>
+          ) : (
+            filtered.map(app => (
+              <article className="application-item" key={app.id}>
+                <div className="application-info">
+                  <div className="application-header">
+                    <strong className="company-name">{app.company}</strong>
+                    <span className="role-name">{app.role}</span>
+                    <span className="job-type-badge">{app.type}</span>
+                  </div>
+                  <div className="application-meta">
+                    <small>📅 {app.deadline ? (Math.ceil((new Date(app.deadline) - new Date()) / 86400000) === 1 ? '1 day left' : `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left`) : 'No deadline'}</small>
+                    <small>🔗 {app.source || 'Manual entry'}</small>
+                  </div>
+                  {app.notes && <div className="application-notes"><small>📝 {app.notes.length > 100 ? app.notes.substring(0, 100) + '...' : app.notes}</small></div>}
+                </div>
+                <div className="item-actions">
+                  <select value={app.status} onChange={e => onStatusChange(app.id, e.target.value)} className="status-select">
+                    {statuses.map(s => <option key={s}>{s}</option>)}
+                  </select>
+                  <div className="status-badge" data-status={app.status}>{app.status}</div>
+                  <button className="delete-btn" onClick={() => onDelete(app.id)}><Trash2 size={14} /> Delete</button>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+createRoot(document.getElementById('root')).render(<App />);

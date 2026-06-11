@@ -185,10 +185,23 @@ function App() {
         <p>
           A student-focused job application tracker that replaces messy spreadsheets with fast logging, clear deadlines, and real-time status tracking — backed by Supabase.
         </p>
-        <div className="feature-list">
-          <Feature icon={<Sparkles />} title="30-second entry" text="Log job applications quickly without spreadsheet friction." />
-          <Feature icon={<CalendarClock />} title="Deadline awareness" text="Keep upcoming deadlines and follow-ups visible." />
-          <Feature icon={<ShieldCheck />} title="Persistent data" text="Your applications are saved to Supabase and available next time you log in." />
+        {/* HOW IT WORKS CARDS - Updated */}
+        <div className="how-it-works">
+          <div className="how-card">
+            <div className="how-icon">📝</div>
+            <h3>30-second entry</h3>
+            <p>Log job applications quickly without spreadsheet friction.</p>
+          </div>
+          <div className="how-card">
+            <div className="how-icon">⏰</div>
+            <h3>Deadline awareness</h3>
+            <p>Keep upcoming deadlines and follow-ups visible.</p>
+          </div>
+          <div className="how-card">
+            <div className="how-icon">💾</div>
+            <h3>Persistent data</h3>
+            <p>Your applications are saved to Supabase and available next time you log in.</p>
+          </div>
         </div>
       </section>
 
@@ -398,10 +411,24 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
       <h2>Tracker dashboard</h2>
       <p>All your applications are loaded live from Supabase.</p>
 
-      <div className="stats-row">
-        <div><strong>{applications.length}</strong><span>Total</span></div>
-        <div><strong>{applications.filter(a => a.status === 'Interview').length}</strong><span>Interviews</span></div>
-        <div><strong>{applications.filter(a => a.status === 'Applied').length}</strong><span>Applied</span></div>
+      {/* NEW STATS GRID - 4 cards instead of 3 */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-value">{applications.length}</div>
+          <div className="stat-label">Total applied</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{applications.filter(a => a.status === 'Applied').length}</div>
+          <div className="stat-label">In progress</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{applications.filter(a => a.status === 'Interview').length}</div>
+          <div className="stat-label">Interviews</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{applications.filter(a => a.status === 'Offer').length}</div>
+          <div className="stat-label">Offers</div>
+        </div>
       </div>
 
       <div style={{display: 'flex', gap: 8, flexWrap: 'wrap', margin: '12px 0'}}>
@@ -416,8 +443,8 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
               cursor: 'pointer',
               fontWeight: '700',
               fontSize: 13,
-              background: filter === f ? '#214ecf' : '#eef3ff',
-              color: filter === f ? 'white' : '#214ecf',
+              background: filter === f ? '#4F46E5' : '#eef3ff',
+              color: filter === f ? 'white' : '#4F46E5',
             }}
           >{f}</button>
         ))}
@@ -438,13 +465,18 @@ function DashboardScreen({ applications, loading, onStatusChange, onDelete, onAd
                 <small>{app.deadline ? (Math.ceil((new Date(app.deadline) - new Date()) / 86400000) === 1 ? '1 day left' : `${Math.ceil((new Date(app.deadline) - new Date()) / 86400000)} days left`) : 'No deadline'} · {app.source || 'Manual entry'}</small>
               </div>
               <div className="item-actions">
+                {/* Status dropdown */}
                 <select
                   value={app.status}
                   onChange={e => onStatusChange(app.id, e.target.value)}
-                  style={{color: app.status === 'Interview' ? '#16a35d' : app.status === 'Offer' ? '#f0a500' : app.status === 'Rejected' ? '#c0392b' : app.status === 'Ghosted' ? '#888888' : '#214ecf', fontWeight: '700'}}
+                  className="status-select"
                 >
                   {statuses.map(s => <option key={s}>{s}</option>)}
                 </select>
+                {/* Colourful status badge */}
+                <div className="status-badge" data-status={app.status}>
+                  {app.status}
+                </div>
                 <button className="delete-btn" onClick={() => onDelete(app.id)} title="Delete">
                   <Trash2 size={13} /> Delete
                 </button>

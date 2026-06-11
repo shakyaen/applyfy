@@ -13,10 +13,6 @@ async function request(path, options = {}) {
 }
 
 export const api = {
-  // ─────────────────────────────────────────
-  // USER APIs
-  // ─────────────────────────────────────────
-  
   upsertUser: (userData) =>
     request('/api/users', { 
       method: 'POST', 
@@ -38,27 +34,13 @@ export const api = {
   getUser: (email) =>
     request(`/api/users/${encodeURIComponent(email)}`),
 
-  // ─────────────────────────────────────────
-  // APPLICATIONS APIs
-  // ─────────────────────────────────────────
-  
   getApplications: (userEmail) =>
     request(`/api/applications/${encodeURIComponent(userEmail)}`),
 
   addApplication: (data) =>
     request('/api/applications', { 
       method: 'POST', 
-      body: JSON.stringify({
-        user_email: data.user_email,
-        company: data.company,
-        role: data.role,
-        type: data.type,
-        deadline: data.deadline,
-        source: data.source,
-        link: data.link,
-        status: data.status,
-        reminder: data.reminder,
-      }) 
+      body: JSON.stringify(data) 
     }),
 
   updateStatus: (id, status) =>
